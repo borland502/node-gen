@@ -47,7 +47,6 @@ tasks:
     cmds:
       - npx express-generator-typescript {{.CLI_ARGS}}
       - "{{.IDE}} {{.CLI_ARGS}}"
-      - npm install ./{{.CLI_ARGS}} --force
       - npm install --save-dev --force eslint @eslint/js @types/eslint__js typescript@latest typescript-eslint {{.CLI_ARGS}}
       - test -f {{.CLI_ARGS}}/eslint.config.js || rm {{.CLI_ARGS}}/eslint.config.js
       - |
@@ -62,6 +61,6 @@ tasks:
           ...tseslint.configs.recommended,
         );
         EOF
-
+      - npm install ./{{.CLI_ARGS}} --force
     dir:
       "{{.NODE_DEV_DIR}}"
