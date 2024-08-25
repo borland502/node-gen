@@ -1,0 +1,67 @@
+version: "3"
+
+env:
+  NODE_DEV_DIR:
+    sh: |
+      if [[ ${NODE_DEV_DIR+x} ]]; then
+        echo ${NODE_DEV_DIR}
+      else
+        echo "${HOME}/WebstormProjects"
+      fi
+
+vars:
+  IDE:
+    sh: |
+      if [[ $(command -v webstorm) ]]; then
+        echo "webstorm"
+      else
+        echo "code"
+      fi
+
+includes:
+  deps:
+    taskfile: ".taskfiles/dependencies.yaml"
+    internal: true
+
+tasks:
+
+  debug:
+    desc:  Debug
+    cmd: echo {{.NODE_DEV_DIR}}
+
+  dev-dir:
+    internal: true
+    deps:
+      - task: deps:gum
+    cmd: mkdir -p {{.NODE_DEV_DIR}}
+    generates:
+      - "{{.NODE_DEV_DIR}}"
+
+  express-gen-ts:
+    desc:  Creates a new express application similar to the express-generator module using Typescript
+    deps:
+      - dev-dir
+    summary: |
+      NPM: https://www.npmjs.com/package/express-generator-typescript
+      Github: https://github.com/seanpmaxwell/express-generator-typescript#readme
+    cmds:
+      - npx express-generator-typescript {{.CLI_ARGS}}
+      - "{{.IDE}} {{.CLI_ARGS}}"
+      - npm install ./{{.CLI_ARGS}} --force
+      - npm install --save-dev --force eslint @eslint/js @types/eslint__js typescript@latest typescript-eslint {{.CLI_ARGS}}
+      - test -f {{.CLI_ARGS}}/eslint.config.js || rm {{.CLI_ARGS}}/eslint.config.js
+      - |
+        cat << EOF > {{.CLI_ARGS}}/eslint.config.mjs
+        // @ts-check
+        
+        import eslint from '@eslint/js';
+        import tseslint from 'typescript-eslint';
+        
+        export default tseslint.config(
+          eslint.configs.recommended,
+          ...tseslint.configs.recommended,
+        );
+        EOF
+
+    dir:
+      "{{.NODE_DEV_DIR}}"
