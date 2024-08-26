@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+env:
+  TS_VER: 4
+  SCRIPT_PREFIX: "zx"
+  GUM_INFO_FOREGROUND: "#7bd88f"
+  GUM_INPUT_CURSOR_FOREGROUND: "#131313"
+  GUM_INPUT_PROMPT_FOREGROUND: "#191919"
+  GUM_INPUT_PROMPT: "> "
+  GUM_INPUT_WIDTH: 120
+  NVM_DIR: "${HOME}/.nvm"
+
+  NODE_DEV_DIR:
+    sh: |
+      if [[ ${NODE_DEV_DIR+x} ]]; then
+        echo ${NODE_DEV_DIR}
+      else
+        echo "${HOME}/WebstormProjects"
+      fi
+
+vars:
+  IDE:
+    sh: "{{.ROOT_DIR}}/scripts/ide.mts"
+
+tasks:
+  dependencies:
+    internal: true
+    silent: true
+    cmd: "{{.ROOT_DIR}}/install.mts"
+
+  dev-dir:
+    internal: true
+    silent: true
+    cmd: mkdir -p {{.NODE_DEV_DIR}}
+    deps:
+      - dependencies
+    generates:
+      - "{{.NODE_DEV_DIR}}"
+
+  open-project:
+    internal: true
+    cmd: "{{.IDE}} ./{{.PROJECT_NAME}}"
+    dir:
+      "{{.NODE_DEV_DIR}}"
+
+  update-packages:
+    internal: true
+    cmd: "npm install"
+    dir:
+      "{{.NODE_DEV_DIR}}/{{.PROJECT_NAME}}"
+
+  nvm:install-lts:
+    internal: true
+    interactive: true
+    cmds:
+      - >-
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"; nvm install --lts 2&1> /dev/null
+      - echo $(node --version) > .nvmrc
+    dir:
+      "{{.NODE_DEV_DIR}}/{{.PROJECT_NAME}}"
+
+  update-eslint:
+    internal: true
+    cmds:
+      - npm install eslint @eslint/js @types/eslint__js typescript@^{{.TS_VER}} typescript-eslint
+      - test -f .eslintrc.json && rm .eslintrc.json
+      - test -f .eslintignore && rm .eslintignore
+      - |
+        cat << EOF > eslint.config.mjs
+        // @ts-check
+        
+        import eslint from '@eslint/js';
+        import tseslint from 'typescript-eslint';
+        
+        export default tseslint.config(
+          eslint.configs.recommended,
+          ...tseslint.configs.recommended,
+        );
+        EOF
+    dir:
+      "{{.NODE_DEV_DIR}}/{{.PROJECT_NAME}}"
+    generates:
+      - eslint.config.mjs
+
+  express-gen-ts:
+    desc:  Creates a new express application, updates eslint, and opens the project in an IDE
+    interactive: true
+    deps:
+      - dev-dir
+    summary: |
+      NPM: https://www.npmjs.com/package/express-generator-typescript
+      Github: https://github.com/seanpmaxwell/express-generator-typescript#readme
+      
+      Steps:
+      1.) Generate project using express-generator-typescript and prompt for project name
+      2.) Patch eslint from eslint.json to eslint.config.mjs
+      3.) Create and switch to version listed in project .nvmrc
+      4.) Run npm install on the new project
+      5.) Open project in detected IDE
+    vars:
+      # prompts will execute in order -- zx question doesn't seem to play well here
+      PROJECT_NAME:
+        sh: >-
+          gum input --placeholder "Project Name?"
+
+    cmds:
+      - npx express-generator-typescript@latest {{.PROJECT_NAME}}
+      - task: update-eslint
+        vars:
+          PROJECT_NAME: "{{.PROJECT_NAME}}"
+      - task: nvm:install-lts
+        vars:
+          PROJECT_NAME: "{{.PROJECT_NAME}}"
+      - task: update-packages
+        vars:
+          PROJECT_NAME: "{{.PROJECT_NAME}}"
+      - task: open-project
+        vars:
+          PROJECT_NAME: "{{.PROJECT_NAME}}"
+    dir:
+      "{{.NODE_DEV_DIR}}"
+    generates:
+      - "./{{.PROJECT_NAME}}"

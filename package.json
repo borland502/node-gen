@@ -1,0 +1,23 @@
+{
+  "name": "node-gen",
+  "version": "1.0.0",
+  "description": "Taskfile/ZX tasks for new nodejs projects",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "install": "npx tsx install.mts"
+  },
+  "author": "Jeremy Hettenhouser",
+  "license": "MIT",
+  "dependencies": {
+    "@go-task/cli": "^3.38.0",
+    "express-generator-typescript": "^2.4.15",
+    "typescript": "^5.5.4",
+    "zx": "^8.1.4"
+  },
+  "devDependencies": {
+    "@types/chalk": "^2.2.0"
+  }
+}
