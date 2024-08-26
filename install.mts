@@ -1,6 +1,6 @@
 #!/usr/bin/env -S npx tsx
 
-import {$, chalk, which, question, LogEntry} from 'zx'
+import {$, chalk, which, question, LogEntry, ProcessOutput} from 'zx'
 import {exit} from 'process'
 import {ChalkInstance} from "chalk";
 
@@ -25,18 +25,29 @@ $.log = (entry: LogEntry) => {
     }
 }
 
-// Check for all essential commands except node, npm, & friends
-const dependencies = ["task", "gum", "curl"];
+// Check for all essential commands though npm & friends should be there
+const dependencies = ["gum", "curl"];
 
 let program;
 let counter: number = 0;
 
 for (program of dependencies) {
     if (await which(program, {nothrow: true}) == null) {
+
+        // which and zx doesn't work with scripts like nvm, so
+        if (program == "nvm") {
+            const res: ProcessOutput = await $`command -v nvm`
+            if (res.exitCode === 0) {
+                ++counter
+                continue
+            }
+        }
+
         log(`${program} not detected`, LogLevel.warn)
         const res = await question("Would you like to install it?  ", {
             choices: ["Y", "N"]
         })
+
         if (res == "Y") {
             const brew = await which("brew", {nothrow: true})
 
