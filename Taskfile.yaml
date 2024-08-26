@@ -1,6 +1,14 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
 env:
+  TS_VER: 4
+  SCRIPT_PREFIX: "npx tsx"
+  GUM_INFO_FOREGROUND: "#7bd88f"
+  GUM_INPUT_CURSOR_FOREGROUND: "#131313"
+  GUM_INPUT_PROMPT_FOREGROUND: "#191919"
+  GUM_INPUT_PROMPT: "> "
+  GUM_INPUT_WIDTH: 120
   NODE_DEV_DIR:
     sh: |
       if [[ ${NODE_DEV_DIR+x} ]]; then
@@ -11,29 +19,20 @@ env:
 
 vars:
   IDE:
-    sh: |
-      if [[ $(command -v webstorm) ]]; then
-        echo "webstorm"
-      else
-        echo "code"
-      fi
-
-includes:
-  deps:
-    taskfile: ".taskfiles/dependencies.yaml"
-    internal: true
+    sh: "{{.ROOT_DIR}}/scripts/ide.mts"
 
 tasks:
-
-  debug:
-    desc:  Debug
-    cmd: echo {{.NODE_DEV_DIR}}
+  dependencies:
+    internal: true
+    silent: true
+    cmd: "{{.ROOT_DIR}}/install.mts"
 
   dev-dir:
     internal: true
-    deps:
-      - task: deps:gum
+    silent: true
     cmd: mkdir -p {{.NODE_DEV_DIR}}
+    deps:
+      - dependencies
     generates:
       - "{{.NODE_DEV_DIR}}"
 
@@ -44,13 +43,20 @@ tasks:
     summary: |
       NPM: https://www.npmjs.com/package/express-generator-typescript
       Github: https://github.com/seanpmaxwell/express-generator-typescript#readme
+    vars:
+      # prompts will execute in order
+      PROJECT_NAME:
+        sh: >-
+          gum input --placeholder "Project Name?"
+
     cmds:
-      - npx express-generator-typescript {{.CLI_ARGS}}
-      - "{{.IDE}} {{.CLI_ARGS}}"
-      - npm install --save-dev --force eslint @eslint/js @types/eslint__js typescript@latest typescript-eslint {{.CLI_ARGS}}
-      - test -f {{.CLI_ARGS}}/eslint.config.js || rm {{.CLI_ARGS}}/eslint.config.js
+      - npx express-generator-typescript {{.PROJECT_NAME}}
+      - "{{.IDE}} {{.PROJECT_NAME}}"
+      - npm install --save-dev eslint @eslint/js @types/eslint__js typescript@^{{.TS_VER}} typescript-eslint {{.PROJECT_NAME}}
+      - test -f {{.PROJECT_NAME}}/.eslintrc.json && rm {{.PROJECT_NAME}}/.eslintrc.json
+      - test -f {{.PROJECT_NAME}}/.eslintignore && rm {{.PROJECT_NAME}}/.eslintignore
       - |
-        cat << EOF > {{.CLI_ARGS}}/eslint.config.mjs
+        cat << EOF > {{.PROJECT_NAME}}/eslint.config.mjs
         // @ts-check
         
         import eslint from '@eslint/js';
@@ -61,6 +67,6 @@ tasks:
           ...tseslint.configs.recommended,
         );
         EOF
-      - npm install ./{{.CLI_ARGS}} --force
+      - npm install ./{{.PROJECT_NAME}}
     dir:
       "{{.NODE_DEV_DIR}}"
