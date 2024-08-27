@@ -3,14 +3,16 @@ version: "3"
 
 env:
   TS_VER: 4
-  SCRIPT_PREFIX: "zx"
-  GUM_INFO_FOREGROUND: "#7bd88f"
-  GUM_INPUT_CURSOR_FOREGROUND: "#131313"
-  GUM_INPUT_PROMPT_FOREGROUND: "#191919"
+  SCRIPT_PREFIX: "npx tsx"
+  BLUE: "#5ad4e6"
+  PURPLE: "#948ae3"
+  ORANGE: "#fd9353"
+  RED: "#fc618d"
+  GUM_INPUT_CURSOR_FOREGROUND: "#5ad4e6"
+  GUM_INPUT_PROMPT_FOREGROUND: "#948ae3"
   GUM_INPUT_PROMPT: "> "
   GUM_INPUT_WIDTH: 120
   NVM_DIR: "${HOME}/.nvm"
-
   NODE_DEV_DIR:
     sh: |
       if [[ ${NODE_DEV_DIR+x} ]]; then
@@ -45,25 +47,27 @@ tasks:
       "{{.NODE_DEV_DIR}}"
 
   update-packages:
-    internal: true
+    internal: true  
     cmd: "npm install"
     dir:
       "{{.NODE_DEV_DIR}}/{{.PROJECT_NAME}}"
+    sources:
+      - "{{.NODE_DEV_DIR}}/{{.PROJECT_NAME}}/node_modules"
 
   nvm:install-lts:
-    internal: true
-    interactive: true
+    internal: true  
     cmds:
-      - >-
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"; nvm install --lts 2&1> /dev/null
+      - test $(command -v nvm) || (curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash)
       - echo $(node --version) > .nvmrc
     dir:
       "{{.NODE_DEV_DIR}}/{{.PROJECT_NAME}}"
+    generates:
+      - .nvmrc
 
   update-eslint:
     internal: true
     cmds:
-      - npm install eslint @eslint/js @types/eslint__js typescript@^{{.TS_VER}} typescript-eslint
+      - npm install eslint @eslint/js @types/eslint__js typescript@^{{.TS_VER}} typescript-eslint --save-dev
       - test -f .eslintrc.json && rm .eslintrc.json
       - test -f .eslintignore && rm .eslintignore
       - |
@@ -85,7 +89,6 @@ tasks:
 
   express-gen-ts:
     desc:  Creates a new express application, updates eslint, and opens the project in an IDE
-    interactive: true
     deps:
       - dev-dir
     summary: |
@@ -102,7 +105,7 @@ tasks:
       # prompts will execute in order -- zx question doesn't seem to play well here
       PROJECT_NAME:
         sh: >-
-          gum input --placeholder "Project Name?"
+          gum input --prompt.foreground="{{.PURPLE}}" --cursor.foreground="{{.BLUE}}" --placeholder "Project Name?"
 
     cmds:
       - npx express-generator-typescript@latest {{.PROJECT_NAME}}

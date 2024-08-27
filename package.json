@@ -1,23 +1,27 @@
 {
   "name": "node-gen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Taskfile/ZX tasks for new nodejs projects",
-  "main": "index.js",
+  "main": "install.mts",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
-    "install": "npx tsx install.mts"
+    "install:all": "npm run install:brew && brew task nvm gum",
+    "install:brew": "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+    "install:task": "brew install task",
+    "install:nvm": "brew install nvm",
+    "install:nvm-lts": "NVM_DIR=${HOME}/.nvm; [ -s \"$NVM_DIR/nvm.sh\" ] && \\. \"$NVM_DIR/nvm.sh\"; nvm install --lts",
+    "install:gum": "brew install gum"
   },
   "author": "Jeremy Hettenhouser",
   "license": "MIT",
   "dependencies": {
-    "@go-task/cli": "^3.38.0",
     "express-generator-typescript": "^2.4.15",
     "typescript": "^5.5.4",
     "zx": "^8.1.4"
   },
   "devDependencies": {
-    "@types/chalk": "^2.2.0"
+    "@types/chalk": "^0.4.31"
   }
 }
